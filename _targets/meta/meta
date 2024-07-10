@@ -1,23 +1,23 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-admin_boundaries|stem|3a10f1af22f5b8d7|fc5b936981dd6b46|d4b9abfcae03df5e|2013844013||t19914.7987878222s|8b857b30b923b343|4254|qs|local|vector|||0.542||
-buildings|stem|314d86f04e4ceeb7|02e05d17df8834b7|916c84457ad28837|462642683||t19914.8037943303s|b5d894297e978693|14906273|qs|local|vector|||7.668||
-builtup|stem|8a3454d630c876ef|0f33268b060c7e74|f9fe89e45430d226|1010478255||t19914.7993215431s|4824ef41d4ed0157|19838447|qs|local|vector|||7.298||
-bus|stem|6c9fadfce67c124c|3dfcc8002c9e6ab5|7edd2ae8d0df7fea|-878447034||t19914.8031671569s|cf6670d3f98b2860|10672803|qs|local|vector|||2.068||
-climate|stem|907b3459b8e6232a|5d57227fb2a1c946|6f89db498a79b635|1068145534||t19914.80433328s|d0ce4e0637cd9a48|12066800|qs|local|vector|||9.014||
-crime|stem|00ee53366a44e59f|598278cf1d803ca2|d1424725e445f80f|-1494660658||t19914.7977829298s|b8a1f3524928e0b5|423|qs|local|vector|||0.542||
-crop_area|stem|7bc22ce14dc27b7f|469e263be770e052|64c2b66ea4db4940|-1097810423||t19914.7999727174s|ac50fa8e4ec0ca04|23025554|qs|local|vector|||7.328||
-crop_locations|stem|d586eb4370421a28|2d79afc0c415297c|c02712c715742b95|2001628622||t19914.8080181832s|69ad9763a553bcd5|714|qs|local|vector|||4.74|There was 1 warning in mutate.ℹ In argument Production  as.numericpasteProduction t, sep  .Caused by warning NAs introduced by coercion|
+admin_boundaries|stem|3a10f1af22f5b8d7|fc5b936981dd6b46|d4b9abfcae03df5e|684552227||t19914.8423725923s|8b857b30b923b343|4254|qs|local|vector|||0.042||
+buildings|stem|314d86f04e4ceeb7|02e05d17df8834b7|916c84457ad28837|-1116330445||t19914.8425560425s|b5d894297e978693|14906273|qs|local|vector|||2.693||
+builtup|stem|8a3454d630c876ef|0f33268b060c7e74|f9fe89e45430d226|1931233050||t19914.8425903271s|4824ef41d4ed0157|19838447|qs|local|vector|||2.559||
+bus|stem|6c9fadfce67c124c|3dfcc8002c9e6ab5|7edd2ae8d0df7fea|415293472||t19914.8426230569s|cf6670d3f98b2860|10672803|qs|local|vector|||2.545||
+climate|stem|907b3459b8e6232a|5d57227fb2a1c946|6f89db498a79b635|-934591008||t19914.8426794732s|d0ce4e0637cd9a48|12066800|qs|local|vector|||4.452||
+crime|stem|00ee53366a44e59f|598278cf1d803ca2|d1424725e445f80f|-1715891074||t19914.8423734425s|b8a1f3524928e0b5|423|qs|local|vector|||0.069||
+crop_area|stem|7bc22ce14dc27b7f|469e263be770e052|64c2b66ea4db4940|-250664976||t19914.8427128571s|ac50fa8e4ec0ca04|23025554|qs|local|vector|||2.436||
+crop_locations|stem|d586eb4370421a28|2d79afc0c415297c|c02712c715742b95|-491706324||t19914.8424479072s|69ad9763a553bcd5|714|qs|local|vector|||6.428|There was 1 warning in mutate.ℹ In argument Production  as.numericpasteProduction t, sep  .Caused by warning NAs introduced by coercion|
 croplocations|stem|d586eb4370421a28|e6ca65f10cc23215|bf04ab5eb49a6878|-688551474||t19914.7466556948s|69ad9763a553bcd5|714|qs|local|vector|||0.456|There was 1 warning in mutate.ℹ In argument Production  as.numericpasteProduction t, sep  .Caused by warning NAs introduced by coercion|
-crops_district|stem|988ee1281c93a415|5f1a540f913c15b7|8113e609d6e3a9e8|986044810||t19914.7977834016s|7554e92dc942d7d4|807|qs|local|vector|||0.036||
+crops_district|stem|988ee1281c93a415|5f1a540f913c15b7|8113e609d6e3a9e8|-561863358||t19914.8424484245s|7554e92dc942d7d4|807|qs|local|vector|||0.039||
 district_level|stem|0527cc29b2479a24|a5d133fef28c3d31|68d1a959ddf7ba37|-1511776135||t19914.8080185059s|6d0cbb09e784fbc8|7473|qs|local|vector|||0.005||
-districts|stem|a0a50571cf0cf7f6|784898090c14878d|68d1a959ddf7ba37|476155586||t19914.8148874728s|43d8316c175136cd|7467|qs|local|vector|||0.008||
-education|stem|debe7d4b9691036d|9ee3850bd337a755|0e26bc8c335a07a0|-1363026053||t19914.7988934951s|4422f838b970686b|912|qs|local|vector|||2.156|There were 3 warnings in mutate.The first warning wasℹ In argument OVERALL_LI  as.numericpasteOVERALL_LI, sep  .Caused by warning NAs introduced by coercionℹ Run dplyrlast_dplyr_warnings to see the 2 remaining warnings.|
-forest|stem|be4087d6b2ae0a18|984014cd2733e7b3|49e6409d6a1e45d4|-1003673999||t19914.8008352138s|b9fbcc775ac01a03|27813809|qs|local|vector|||7.277||
-full_data|stem|5a25a1b3f4a054ee|c014d3f6aa54efd8|ae51f06a8f051144|34231949||t19914.8191093246s|7e27befaca15ebd7|83554998|qs|local|vector|||0.217||
-geospatial|stem|c0db4813ae0d44ad|bddccd7ab28c51e7|b7fb5d86d712f6a5|-1143783568||t19914.8135450835s|db2547c813c0344a|8709277|qs|local|vector|||7.079||
-hydroveg|stem|bb6faf3a0faed2f6|e6b834a9b87196e8|a506f4eb60d4295a|646605047||t19914.800614844s|6799f60553c2cd58|10890826|qs|local|vector|||7.482||
-industries|stem|a20d845612ae87a8|926e8cdf9a0c2864|a766540fb225bf9d|1618978050||t19914.7977839627s|bb6c9b28161a1211|143|qs|local|vector|||0.045||
-landcover|stem|f3f073888cd3878f|e8a53833db405dc4|4d829395855a0d86|-1687245806||t19914.7881232963s|92586f6f60506ed2|14006615|qs|local|vector|||7.679||
+districts|stem|a0a50571cf0cf7f6|784898090c14878d|68d1a959ddf7ba37|-2101477331||t19914.8429272252s|43d8316c175136cd|7467|qs|local|vector|||0.006||
+education|stem|debe7d4b9691036d|9ee3850bd337a755|0e26bc8c335a07a0|459215347||t19914.8424712862s|4422f838b970686b|912|qs|local|vector|||1.97|There were 3 warnings in mutate.The first warning wasℹ In argument OVERALL_LI  as.numericpasteOVERALL_LI, sep  .Caused by warning NAs introduced by coercionℹ Run dplyrlast_dplyr_warnings to see the 2 remaining warnings.|
+forest|stem|be4087d6b2ae0a18|984014cd2733e7b3|49e6409d6a1e45d4|-199407735||t19914.842740113s|b9fbcc775ac01a03|27813809|qs|local|vector|||1.833||
+full_data|stem|048ec488cf95a8e1|31e948eebda8ea71|ae51f06a8f051144|499047378||t19914.843507604s|42d3c840c53b3bc3|83321566|qs|local|vector|||0.176||
+geospatial|stem|c0db4813ae0d44ad|bddccd7ab28c51e7|b7fb5d86d712f6a5|-245591191||t19914.842794243s|db2547c813c0344a|8709277|qs|local|vector|||4.015||
+hydroveg|stem|bb6faf3a0faed2f6|e6b834a9b87196e8|a506f4eb60d4295a|306893680||t19914.8428223476s|6799f60553c2cd58|10890826|qs|local|vector|||2.104||
+industries|stem|a20d845612ae87a8|926e8cdf9a0c2864|a766540fb225bf9d|1794790564||t19914.8429270761s|bb6c9b28161a1211|143|qs|local|vector|||0.026||
+landcover|stem|f3f073888cd3878f|e8a53833db405dc4|4d829395855a0d86|186521626||t19914.8425205543s|92586f6f60506ed2|14006615|qs|local|vector|||3.918||
 load_admin_boundaries|function|578da3ea9c78f843|||||||||||||||
 load_buildings|function|950eb3620a1ba942|||||||||||||||
 load_builtup|function|1d97277b74c2ff7d|||||||||||||||
@@ -42,8 +42,8 @@ load_railroads|function|b539b1cbea00a1c4|||||||||||||||
 load_rangeland|function|61b16b5a9a728f0e|||||||||||||||
 load_roads|function|cb969d1c0b127973|||||||||||||||
 load_watercover|function|72e3558a7f4531bb|||||||||||||||
-outcomes|stem|109cbb92cc736dfd|98c0f0b9efa10cf4|424a2aef7a9ad92c|2100227421||t19914.8153761425s|1b0b347982137782|83575624|qs|local|vector|||35.557||
-poverty|stem|4b0d389669cd1a03|2d87ae1e92a5f643|3aaeea470adc3c39|-1469405602||t19914.7947272401s|aa8a60c557b98faa|1135|qs|local|vector|||0.499||
+outcomes|stem|109cbb92cc736dfd|98c0f0b9efa10cf4|424a2aef7a9ad92c|-1043494519||t19914.8434577975s|1b0b347982137782|83575624|qs|local|vector|||38.981||
+poverty|stem|4b0d389669cd1a03|2d87ae1e92a5f643|3aaeea470adc3c39|255717570||t19914.8424714897s|aa8a60c557b98faa|1135|qs|local|vector|||0.014||
 prepare_admin_boundaries|function|3e7a46dd519e793b|||||||||||||||
 prepare_buildings|function|ee1271ad86bc99b3|||||||||||||||
 prepare_bus|function|266c29c82b3058cf|||||||||||||||
@@ -60,8 +60,8 @@ prepare_poverty|function|1c569bbbbd27daae|||||||||||||||
 prepare_railroads|function|da8a11d155ab315a|||||||||||||||
 prepare_roads|function|a9d901ab9d678b74|||||||||||||||
 prepare_watercover|function|a52238b5b4c5ae02|||||||||||||||
-railroads|stem|f20b3df183ca89fd|83bc191885e12b22|7946aab8d3a0649c|47099464||t19914.8023217846s|7e412fd7aef0e26c|10671712|qs|local|vector|||7.722||
-rangeland|stem|aab8c9827fd8569d|6f2e7f77d0c5c738|0a22b5ed0aaf8323|-86223706||t19914.8012796734s|42756fae7e0cd81b|28352768|qs|local|vector|||7.282||
+railroads|stem|f20b3df183ca89fd|83bc191885e12b22|7946aab8d3a0649c|-367811888||t19914.8428548563s|7e412fd7aef0e26c|10671712|qs|local|vector|||2.503||
+rangeland|stem|aab8c9827fd8569d|6f2e7f77d0c5c738|0a22b5ed0aaf8323|-1160059865||t19914.8428836155s|42756fae7e0cd81b|28352768|qs|local|vector|||2.002||
 raw_admin_boundaries|stem|86896f8ffb1c19de|af9a55d330c47376|2c530c1562a7fbd1|-6613676||t19914.7422653424s|fff600bf82c9080e|6812|qs|local|vector|||0.562||
 raw_crime|stem|d2f6a26a3d0d69e2|9105761eaecfa97b|2c530c1562a7fbd1|215306007||t19914.7756216175s|c9c7f40d072ad120|13791|qs|local|vector|||0.553||
 raw_croplocations|stem|dc9e6c291ab25525|2a954524da081530|2c530c1562a7fbd1|-1275621387||t19914.7428314433s|c0bafff5175353c7|3279795|qs|local|vector|||4.568||
@@ -69,5 +69,8 @@ raw_crops_district|stem|a0a901712a13b537|b993ca1e3c2b416a|2c530c1562a7fbd1|-1236
 raw_education|stem|09b98f8a9ad27a17|1ed449b82446951f|2c530c1562a7fbd1|-1503892494||t19914.7823023282s|25a29a35b3123c62|435531|qs|local|vector|||2.168||
 raw_industries|stem|3a4136acfa6c4746|f12d885a3fcef321|2c530c1562a7fbd1|1680386490||t19914.7832025009s|d90cabfa76eb07af|887|qs|local|vector|||0.427||
 raw_poverty|stem|24b5fb0a1a167b2a|2dcdd5bbd7458ae3|2c530c1562a7fbd1|883109975||t19914.7422656634s|3cc24e4fc2ce46ce|1273|qs|local|vector|||0.02||
-roads|stem|ad51083f2d193f29|f65032e24c66b9ae|f4bee29544728da6|1038729194||t19914.803139663s|9fa4e23afdf9251b|11723711|qs|local|vector|||8.877||
-watercover|stem|36a6e9e88515dfaa|53270231bd65713c|8285e5b694d84a3f|-1921035975||t19914.8026104863s|4b6c82e11797e5e4|11887932|qs|local|vector|||7.61||
+roads|stem|ad51083f2d193f29|f65032e24c66b9ae|f4bee29544728da6|1262112461||t19914.842926649s|9fa4e23afdf9251b|11723711|qs|local|vector|||3.257||
+split|stem|9b6cdf1aef3e7d50|fc0ff4b8be7e48ba|dad8179961b80a90|-372059569||t19914.8473120948s|e7d9fd070b579f6d|84580762|qs|local|vector|||3.075||
+train_data|stem|5203d5f53eae2ac9|577a97f17f3238a7|f291824ca5e97ac9|-362607294||t19914.8473903477s|54ccb6ec77bd70ce|73537280|qs|local|vector|||2.642||
+train_folds|stem|99275bf4caf2094d|f0b58d70f0e9104a|fd86ec04ab15d989|-2017623732||t19914.8475271371s|7cb7ff06fd860671|371171531|qs|local|vector|||0.824||
+watercover|stem|36a6e9e88515dfaa|53270231bd65713c|8285e5b694d84a3f|459010763||t19914.8423718893s|4b6c82e11797e5e4|11887932|qs|local|vector|||8.786||

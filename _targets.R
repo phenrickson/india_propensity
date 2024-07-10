@@ -10,9 +10,12 @@ library(targets)
 # Set target options:
 tar_option_set(
     packages = c("tidyverse",
+                 "tidymodels",
                  "qs"), # Packages that your targets need for their tasks.
     format = "qs", # Optionally set the default storage format. qs is fast.
-    memory = "transient"
+    memory = "transient",
+    # specify seed out of paranoia
+    seed = 1999
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
@@ -176,8 +179,34 @@ list(
         full_data,
         command = 
             outcomes |>
+            select(-col_index, -row_index) |>
             mutate(outcome = case_when(outcome == 1 ~ 'yes',
                                        TRUE ~ 'no'),
                    outcome = factor(outcome, levels = c('no', 'yes')))
+    ),
+    tar_target(
+        split,
+        command = 
+            full_data |>
+            initial_validation_split(strata = outcome,
+                                     prop = c(0.8, 0.1))
+    ),
+    tar_target(
+        train_data,
+        command = 
+            split |>
+            training()
+    ),
+    tar_target(
+        train_folds,
+        command = 
+            train_data |>
+            vfold_cv(strata = outcome,
+                     v = 5)
     )
+    # tar_target(
+    #     base_recipe,
+    #     command = 
+    #         
+    # )
 )
