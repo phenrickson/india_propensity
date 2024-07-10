@@ -1,0 +1,553 @@
+---
+title: "Maharashtra Sampling Strategy"
+author: "Kevin Fahey"
+format: html
+editor: visual
+---
+
+We employed a three-level stratified cluster sampling strategy. Our first level -- the STATE -- was sampled nonrandomly for varying reasons. Our second level is the DISTRICT and the third level is a grid of 300m x 300m 'cubes.' For the first state of Maharashtra, we collected, cleaned, and analyzed a series of district-level and cube-level data. Our unit of analysis is this cube space. In Maharashtra, there are 3,681,786 cubes. We have twelve cube-level predictors and eleven district-level predictors in this model. Our goal here is to employ predictive modelling techniques to develop a propensity score for each cube that tells us the probability of bonded labour existing in any particular space, and then use those propensity scores as the clustering variable in a clustered sampling strategy.
+
+Propensity scores are most frequently used in matching-as-preprocessing. We are using them for a slightly different approach here, which is as a clustering mechanism. In sampling designs, clusters are often used for geographic areas or for voting blocs; we are using them as a replacement for geography, arguing that geographic clustering for bonded labour would be clustered with both the predictors and the outcomes and is therefore sufficiently biased. By using these propensity scores -- one could also say predicted probabilities -- we are able to identify clusters of 'high-probability' or 'low-probability' sites and then sample from them in a data-driven manner.
+
+```{r preamble, echo = F, warning = F, message = F}
+rm(list=ls())
+
+setwd("~/Dropbox/Spring 2024/India Prevalence/Scripts")
+
+library(tidyverse)
+library(tidytable); library(data.table)
+library(tidymodels)
+# library(sf); library(geojsonsf)
+# library(maps)
+library(readxl)
+library(psych); library(knitr)
+# library(kableExtra)
+# library(AzureStor); library(AzureRMR)
+library(sampling)
+library(ssc)
+library(tidyr); library(vroom)
+# library(ff)
+library(ggcorrplot)
+library(poissonreg); library(pscl)
+library(MatchIt)
+
+# https://cran.r-project.org/web/packages/tidytable/tidytable.pdf
+```
+
+```{r data_loading_wrangling, echo = F, warning = F, message = F}
+admin_boundaries_dist <- read.csv("~/Dropbox/Spring 2024/India Prevalence/Data/Geospatial District and State Boundaries/LGD_Districts_All.csv") %>%
+  dplyr::filter(state_iso == "MH") %>%
+  dplyr::select(-X, -state_lgd_code, -state_no, 
+                -state_name, -SUCountry, -X2011_code,
+                -district_iso, -state_iso) %>%
+  rename(distname = district_name)
+
+
+poverty_df <- read.csv("~/Dropbox/Spring 2024/India Prevalence/Data/Poverty_Original_data/Maharashtra Districts Poverty Data.csv") %>%
+  rename(distname = District,
+         headcount_ratio = Headcount.ratio....,
+         intensity = Intensity....) %>%
+  mutate(distname = case_match(distname, "Aurangabad" ~ "Chhatrapati Sambhajinagar",
+                               "Bid (Beed)" ~ "Beed",
+                               "Osmanabad" ~ "Dharashiv",
+                               "Ratnagirli" ~ "Ratnagiri", 
+                               .default = distname))
+
+
+croplocations <- read_excel("~/Dropbox/Spring 2024/India Prevalence/Data/Crops_located_2020/India_SPAM2020_full_data.xlsx")
+# Clean crop values dataframe
+colnames(croplocations) = croplocations[1,]
+projcrs <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+croplocations <- croplocations %>%
+  slice(-1) %>%
+  # st_as_sf(., coords = c("X", "Y")) %>%
+  dplyr::filter(`Adm1 Name` == "Maharashtra") %>%
+  rename(distname = `Adm2 Name`) %>%
+  mutate(Production = as.numeric(paste(`Production (t)`, sep = ""))) %>%
+  group_by(distname) %>%
+  summarise(Production = mean(Production, na.rm = T),
+            number_farms = n()) %>%
+  ungroup() %>%
+  mutate(distname = case_match(distname, "Ahmadnagar" ~ "Ahmednagar",
+                               "Aurangabad" ~ "Chhatrapati Sambhajinagar",
+                               "Bid" ~ "Beed", "Buldhana" ~ "Buldana",
+                               "Gondiya" ~ "Gondia", "Osmanabad" ~ "Dharashiv",
+                               "Raigarh" ~ "Raigad",
+                               .default = distname))
+
+
+crops_district_df <- read.csv("~/Dropbox/Spring 2024/India Prevalence/Data/Crops_2017/original_data/ICRISAT-District Level Data.csv") %>%
+  dplyr::select(Dist.Name, `SUGARCANE.PRODUCTION..1000.tons.`,
+                SUGARCANE.AREA..1000.ha., SUGARCANE.YIELD..Kg.per.ha.) %>%
+  rename(sugarcane_production = SUGARCANE.PRODUCTION..1000.tons.,
+         sugarcane_area = SUGARCANE.AREA..1000.ha., 
+         sugarcane_yield = SUGARCANE.YIELD..Kg.per.ha.,
+         distname = Dist.Name) %>%
+  mutate(distname = case_match(distname, "Amarawati" ~ "Amravati",
+                               "Aurangabad" ~ "Chhatrapati Sambhajinagar", 
+                               "Nasik" ~ "Nashik",
+                               "Osmanabad" ~ "Dharashiv", 
+                               "Yeotmal" ~ "Yavatmal",
+                               .default = distname))
+
+
+crime_df <- read.csv("~/Dropbox/Spring 2024/India Prevalence/Data/Crime_2014_MH/original_data/02_District_wise_crimes_committed_against_ST_2014.csv") %>%
+  dplyr::filter(States.UTs == "Maharashtra") %>%
+  dplyr::select(District, Year, POA_Murder, POA_Rape,
+                POA_Robbery, IPC_Murder, 
+                IPC_Rape, IPC_Robbery,
+                Total.crimes.against.STs) %>%
+  rename(total_crimes = Total.crimes.against.STs,
+         distname = District) %>%
+  mutate(distname = case_match(distname, "Amravati Commr." ~ "Amravati",
+                               "Amravati Rural" ~ "Amravati",
+                               "Aurangabad Commr." ~ "Chhatrapati Sambhajinagar",
+                               "Aurangabad Rural" ~ "Chhatrapati Sambhajinagar",
+                               "Mumbai Commr." ~ "Mumbai", 
+                               "Mumbai Railway" ~ "Mumbai Suburban",
+                               "Navi Mumbai" ~ "Mumbai Suburban",
+                               "Nagpur Commr." ~ "Nagpur", "Nagpur Railway" ~ "Nagpur",
+                               "Nagpur Rural" ~ "Nagpur",
+                               "Nasik Commr." ~ "Nashik", "Nasik Rural" ~ "Nashik",
+                               "Osmanabad" ~ "Dharashiv",
+                               "Pune Commr." ~ "Pune", "Pune Railway" ~ "Pune",
+                               "Pune Rural" ~ "Pune",
+                               "Solapur Commr." ~ "Solapur", 
+                               "Solapur Rural" ~ "Solapur",
+                               "Thane Commr." ~ "Thane", "Thane Rural" ~ "Thane",
+                               .default = distname)) %>%
+  group_by(distname) %>%
+  summarise(POA_Murder = sum(POA_Murder, na.rm = T),
+            POA_Rape = sum(POA_Rape, na.rm = T),
+            POA_Robbery = sum(POA_Robbery, na.rm = T),
+            IPC_Murder = sum(IPC_Murder, na.rm = T),
+            IPC_Rape = sum(IPC_Rape, na.rm = T),
+            IPC_Robbery = sum(IPC_Robbery, na.rm = T),
+            total_crimes = sum(total_crimes, na.rm = T)) %>%
+  dplyr::select(distname, total_crimes)
+
+
+education_df <- read_excel("~/Dropbox/Spring 2024/India Prevalence/Data/Education/original_data/Distt Report Card 2015-16_new.xlsx")
+# Clean education dataframe
+colnames(education_df) <- education_df[18,]
+education_df <- education_df %>%
+  dplyr::select(STATNAME, DISTNAME,
+                OVERALL_LI, FEMALE_LIT, MALE_LIT) %>%
+  slice(-1:-18) %>%
+  dplyr::filter(STATNAME == "MAHARASHTRA") %>%
+  rename(distname = DISTNAME) %>%
+  mutate(OVERALL_LI = as.numeric(paste(OVERALL_LI, sep = "")),
+         FEMALE_LIT = as.numeric(paste(FEMALE_LIT, sep = "")),
+         MALE_LIT = as.numeric(paste(MALE_LIT)),
+         fem_male_lit = FEMALE_LIT/MALE_LIT,
+         distname = str_to_title(distname)) %>%
+  dplyr::select(-STATNAME, -FEMALE_LIT, -MALE_LIT) %>%
+  mutate(distname = case_match(distname, "Ahmadnagar" ~ "Ahmednagar",
+                               "Aurangabad (Maharashtra)" ~ "Chhatrapati Sambhajinagar",
+                               "Bid" ~ "Beed", "Buldana" ~ "Buldhana",
+                               "Gondiya" ~ "Gondia", "Mumbai Ii" ~ "Mumbai",
+                               "Raigarh (Maharashtra)" ~ "Raigarh",
+                               "Mumbai Ii" ~ "Mumbai",
+                               "Mumbai (Suburban)" ~ "Mumbai Suburban",
+                               "Osmanabad" ~ "Dharashiv",
+                               "Raigarh (Maharashtra)" ~ "Raigad",
+                               .default = distname))
+
+
+industries_df <- read_excel("~/Dropbox/Spring 2024/India Prevalence/Data/Industries/original_data/eShram Data as on 08-08-2023.xlsx") %>%
+  dplyr::select(-...1, -...4, -...5) %>%
+  rename(STATE_UT = `As on 8-08-2023`,
+         industry_variable = `289482645`) %>%
+  slice(-1:-3) %>%
+  dplyr::filter(STATE_UT == "Mahrash") %>%
+  mutate(STATE_UT = case_match(STATE_UT, 
+                               "Mahrash" ~ "Maharashtra"),
+         industry_variable = industry_variable/1000000)
+
+
+# Loading in geospatial data
+# Kilns, sugarmills, markets, schools, healthcare
+csv_filenames_geospatial1 <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/Geospatial Data", pattern = "\\.csv")
+df_geospatial1 <- purrr::map(csv_filenames_geospatial1, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/Geospatial Data", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  distinct() %>%
+  mutate(outcome = case_when(bk == 1 | sf == 1 ~ 1, .default = 0)) %>%
+  tidytable::select(-bk, -sf, -name) %>%
+  mutate(district_lgd_code = substr(d_cell_id, 2, 4),
+         district_lgd_code = as.numeric(paste0(district_lgd_code)))
+
+# landcover, bare
+csv_filenames_bare <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_bare", pattern = "\\.csv")
+df_lulc_bare <- purrr::map(csv_filenames_bare, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_bare", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, lulc_bare_pc) %>%
+  distinct()
+
+# Built-up area
+csv_filenames_builtup <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_builtup", pattern = "\\.csv")
+df_lulc_builtup <- purrr::map(csv_filenames_builtup, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_builtup", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, lulc_build_pc) %>%
+  distinct()
+
+# Crop area
+csv_filenames_croparea <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_crop", pattern = "\\.csv")
+df_lulc_croparea <- purrr::map(csv_filenames_croparea, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_crop", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, lulc_crop_pc) %>%
+  distinct()
+
+# Forest area
+csv_filenames_forest <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_forest", pattern = "\\.csv")
+df_lulc_forest <- purrr::map(csv_filenames_forest, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_forest", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, lulc_forest_pc) %>%
+  distinct()
+
+# HydroVeg area
+csv_filenames_hydroveg <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_hydroveg", pattern = "\\.csv")
+df_lulc_hydroveg <- purrr::map(csv_filenames_hydroveg, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_hydroveg", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, lulc_hyveg_pc) %>%
+  distinct()
+
+# Rangeland area
+csv_filenames_rangeland <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_rangeland", pattern = "\\.csv")
+df_lulc_rangeland <- purrr::map(csv_filenames_rangeland, 
+                       ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_lulc_rangeland", .))) %>% 
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, lulc_range_pc) %>%
+  distinct()
+
+# Water cover
+csv_filenames_wb <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_wb", pattern = "\\.csv")
+df_wb <- purrr::map(csv_filenames_wb, ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_wb", .))) %>%
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, wb_pc) %>%
+  distinct()
+
+# Railroads
+csv_filenames_rails <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_rails", pattern = "\\.csv")
+df_rails <- purrr::map(csv_filenames_rails, ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_rails", .))) %>%
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, rail_st) %>%
+  distinct()
+
+# Road types
+csv_filenames_roads <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_roads", pattern = "\\.csv")
+df_roads <- purrr::map(csv_filenames_roads, ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_roads", .))) %>%
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, road1, road2, road3, road4, road5, road6) %>%
+  distinct()
+
+# Bus stations
+csv_filenames_busstations <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_bus_stations", pattern = "\\.csv")
+df_bus <- purrr::map(csv_filenames_busstations, ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_bus_stations", .))) %>%
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, bus) %>%
+  distinct()
+
+# Buildings/density
+csv_filenames_buildings <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_buildings_v1", pattern = "\\.csv")
+df_buildings <- purrr::map(csv_filenames_buildings, ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_buildings_v1", .))) %>%
+  purrr::map(., tidytable::as_tidytable) %>%
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, b_count, b_density_class) %>%
+  distinct()
+
+# Climate
+csv_filenames_climate <- list.files(path = "~/Dropbox/Spring 2024/India Prevalence/Data/mh_climate", pattern = "\\.csv")
+df_climate <- purrr::map(csv_filenames_climate, ~ fread(file.path("~/Dropbox/Spring 2024/India Prevalence/Data/mh_climate", .))) %>%
+  purrr::map(., tidytable::as_tidytable) %>%
+  #mutate(across(.fns = as.character))
+  tidytable::enframe(.) %>%
+  tidyr::unnest(value) %>%
+  tidytable::select(d_cell_id, vuln_index, exp, sens, adapt) %>%
+  distinct() # %>%
+  # mutate(vuln = case_match(vuln, "0" ~ "None", .default = vuln),
+  #        event = case_match(event, "0" ~ "None", .default = event),
+  #        vuln = as.factor(vuln), event = as.factor(event))
+
+gc()  
+```
+
+```{r data_merging, echo = F, warning = F, message = F}
+# Merging
+district_vars <- admin_boundaries_dist %>%
+  left_join(., poverty_df, by = c("distname")) %>%
+  left_join(., crime_df, by = c("distname")) %>%
+  left_join(., education_df, by = c("distname")) %>%
+  # left_join(., industries_df, by = c("STATE_UT")) %>%
+  left_join(., crops_district_df, by = c("distname")) %>%
+  left_join(., croplocations, by = c("distname")) %>%
+  mutate(across(everything(), \(x) replace(x, is.na(x), mean(x, na.rm = TRUE))))
+
+df_outcomes_clean <- df_geospatial1 %>%
+  left_join(., df_lulc_bare, by = c("d_cell_id")) %>%
+  left_join(., df_lulc_builtup, by = c("d_cell_id")) %>%
+  left_join(., df_lulc_croparea, by = c("d_cell_id")) %>%
+  left_join(., df_lulc_forest, by = c("d_cell_id")) %>%
+  left_join(., df_lulc_hydroveg, by = c("d_cell_id")) %>%
+  left_join(., df_lulc_rangeland, by = c("d_cell_id")) %>% 
+  left_join(., df_wb, by = c("d_cell_id")) %>%
+  left_join(., df_rails, by = c("d_cell_id"))  %>%
+  left_join(., df_roads, by = c("d_cell_id")) %>%
+  left_join(., df_bus, by = c("d_cell_id")) %>%
+  left_join(., df_buildings, by = c("d_cell_id")) %>%
+  left_join(., df_climate, by = c("d_cell_id")) %>%
+  left_join(., district_vars, by = c("district_lgd_code")) %>%
+  distinct()
+
+rm(list = c("admin_boundaries_dist", "poverty_df", "crime_df", "education_df", 
+            "industries_df", "crops_district_df", "croplocations", "df_geospatial1",
+            "df_lulc_bare", "df_lulc_builtup", "df_lulc_croparea", "df_lulc_forest",
+            "df_lulc_hydroveg", "df_lulc_rangeland", "df_wb", "df_rails",
+            "district_vars", "df_roads", "df_bus", "df_buildings", "df_climate"))
+rm(list = c("projcrs", "csv_filenames_geospatial1", "csv_filenames_bare",
+            "csv_filenames_builtup", "csv_filenames_croparea", "csv_filenames_forest",
+            "csv_filenames_hydroveg", "csv_filenames_rangeland", "csv_filenames_wb", 
+            "csv_filenames_rails", "csv_filenames_roads", "csv_filenames_busstations", 
+            "csv_filenames_buildings", "csv_filenames_climate"))
+
+gc()
+```
+
+```{r readwrite, echo = F, warning = F, message = F}
+# Write out, read as a flat file
+# write.csv(df_outcomes_clean, "~/Dropbox/Spring 2024/India Prevalence/Data/df_final_clean.csv", row.names = F, na = "")
+# rm(df_outcomes_clean)
+# df_prep <- read.csv.ffdf(file = "~/Dropbox/Spring 2024/India Prevalence/Data/df_final_clean.csv",
+#                          header = T, VERBOSE = T, 
+#                          first.rows = 1000000, next.rows = 1000000)
+
+```
+
+```{r spatial_autocorrelation, echo = F, message = F, warning = F}
+# adjacency_matrix_outcome <- df_outcomes_clean %>%
+#   tidytable::select(col_index, row_index, outcome) %>%
+#   pivot_wider(names_from = c(col_index),
+#               values_from = c(outcome)) %>%
+#   column_to_rownames('row_index') %>%
+#   rowwise() %>%
+#   mutate() # start here
+
+
+```
+
+For the state of Maharashtra, we employ two outcome variables: the presence of a known brick kiln, and the presence of a known sugar-making facility. These two types of facilities across the state are incredibly rare; only 405 cubes out of 3.68 million total cubes have at least one of these two facilities. We cannot estimate the existence of bonded labour directly, but we know these two types of facilities are associated with high levels of bonded labor. Therefore, our model predicts the existence of these two facilities as a proxy for bonded labour.
+
+Predictor variables were chosen due to their relevance to the substantive question and for their availability. For example, poverty is closely associated with the probability of entering into bonded labour; given that poverty-level data are only available at the district-level, we also sought out more granular, cube-level data that is correlated with both poverty and bonded labour. Variables such as the number of healthcare facilities and schools fall into this category. Further, we wanted to obtain metrics of economic vitality for a region; this should be correlated with the existence of bonded labour. Therefore, we obtain data on the presence of marketplaces and roads.
+
+Summary statistics for each of our variables is below along with a correlation matrix; we use shorthand in this table for ease of interpretation, but to explain our cube-level variables: `hf` refers to healthcare facilities; `ed` refers to education facilities; `mkp` refers to marketplaces, `outcome` is the presence of either a brick kiln or sugar facility (or both); `lulc` variables refer to the type of landcover, including `bare`, `build`-up, `crop`land, `forest`, `hydroveg`, and `range`land; our `wb_pc` refers to water cover in a grid, `rail_st` and `roads` refer to the existence of those transport links in the cube. For our district-level variables, `headcount_ratio`, `MPI`, and `intensity` are three measures of poverty; `total_crimes` refers to the total number of three selected serious crimes -- murder, rape, and robbery; `OVERALL_LI` and `fem_male_lit` refer to overall literacy and the proportion of female to male literacy; and remaining variables refer to sugarcane-related production and total agricultural output per district.
+
+```{r summary_stats1, echo = F, warning = F, message = F}
+correlation <- df_outcomes_clean %>%
+  tidytable::select(-distname, -district_lgd_code, -d_cell_id, -s_cell_id,
+                    -col_index, -row_index) %>%
+  # mutate(vuln = as.numeric(vuln), event = as.numeric(event)) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(., method = "circle",
+             type = "upper")
+correlation
+```
+
+```{r summary_stats2, echo = F, warning = F, message = F}
+summary_table <- df_outcomes_clean %>%
+  tidytable::select(-district_lgd_code, -d_cell_id, -s_cell_id, -distname) %>%
+  describe(., na.rm = T, skew = F, ranges = T) %>%
+  add_rownames(., var = "variables") %>%
+  tidytable::select(variables, mean, sd, min, max, n) %>%
+  rename(Mean = mean, Std_Dev = sd, Min = min, Max = max, Obs = n)
+summary_table
+
+gc()
+```
+
+```{r prediction_trunc1, echo = F, warning = F, message = F}
+
+df_prep <- df_outcomes_clean %>% 
+  as_tidytable() %>%
+  tidytable::select(-col_index, -row_index) %>%
+  mutate(distname = as.factor(distname),
+         outcome = as.factor(outcome)) %>%
+  initial_split(., prop = 1/2, strata = outcome)
+
+# Split data
+train_df <- training(df_prep)
+test_df <- testing(df_prep)
+
+# Make number of folds
+# folds <- vfold_cv(train_df, v = 10)
+
+# Make recipe
+demo_recipe <- recipe(outcome ~., data = train_df) %>%
+  update_role(distname, district_lgd_code, d_cell_id, s_cell_id,
+              new_role = "ID") %>%
+  # step_impute_mean(total_crimes, sugarcane_production, sugarcane_yield, 
+  #                    Production, number_farms, OVERALL_LI, fem_male_lit,
+  #                    impute_with = imp_vars(all_predictors())) %>% # revisit step_impute options
+  step_normalize(all_predictors())
+```
+
+After cleaning our data and mean-substituting all missing values at the district level, we create a simple logistic model that we train on one-half of our dataset. We then obtain predicted probabilities for each grid, which we then use to weight a sample of all cubes within a district. We then sample from our districts (prob = 0.3), generating a set of 100 sites from which to obtain survey responses.
+
+To explain our model more fully, what we want to do is predict the existence of either a brick kiln or a sugar facility. The probability of finding one is rare (prob = 0.00011); an uninformed model would predict that no cube would have either, given this low probability. So our model needs to improve upon this in order to be useful.
+
+These probabilities may contain error, so we need to sample across the range of probabilities. This allows us to sample from many places where the model suspects bonded labour may exist, but also those where the model suspects bonded labour may not exist. That allows us to leverage some -- but we stress, not all -- of the properties of a pure random sampling design, while also leveraging the benefits of a clustered sampling approach, which allows us to identify a smaller number of sites from which to obtain data.
+
+```{r prediction_trunc2, echo = F, warning = F, message = F}
+# Make simple logistic model
+demo_model <- logistic_reg() %>%
+  set_engine("glm")
+
+# Penalized logistic model
+# demo_model <- logistic_reg(penalty = double(1), mixture = 1) %>%
+#   set_engine("glmnet")
+
+# Zero-inflated poisson
+# demo_model <- poisson_reg() %>%
+#   set_engine("zeroinfl") %>%
+#   translate()
+
+# Make workflow
+workflow_demo <- workflow() %>%
+  add_model(demo_model) %>%
+  add_recipe(demo_recipe) # %>%
+  # fit_resamples(folds)
+
+# Collect metrics
+# collect_metrics(workflow_demo)
+
+# Fit to test data
+train_demo_wf <- workflow_demo %>%
+  fit(data = train_df)
+
+gc()
+```
+
+```{r propensities, echo = F, warning = F, message = F}
+# Make predictions
+# test_df$prediction <- predict(train_demo_wf, test_df)$.pred_class
+# train_df$prediction <- predict(train_demo_wf, train_df)$.pred_class
+
+test_df_pred <- bind_cols(predict(train_demo_wf, test_df, type = "prob")) %>%
+  bind_cols(test_df %>% tidytable::select(outcome, d_cell_id, distname))
+train_df_pred <- bind_cols(predict(train_demo_wf, train_df, type = "prob")) %>%
+  bind_cols(train_df %>% tidytable::select(outcome, d_cell_id, distname))
+
+rm(list = c("correlation", "demo_model", "demo_recipe", "df_prep", "train_demo_wf",
+     "df_outcomes_clean", "test_df", "train_df", "workflow_demo"))
+
+gc()
+
+# https://parsnip.tidymodels.org/reference/details_poisson_reg_zeroinfl.html
+```
+
+```{r roc_curve, echo = F, warning = F, message = F}
+roc_pred_test <- test_df_pred %>%
+  roc_auc(truth = outcome, .pred_1)
+
+roc_pred_train <- train_df_pred %>%
+  roc_auc(truth = outcome, .pred_1)
+
+# acc_pred <- test_df_pred %>%
+#   accuracy(truth = outcome, as.factor(.pred_1))
+```
+
+We produce an output dataframe with six variables: `.pred_0` reflects the probability the model assigns that there is neither a brick kiln nor a sugar facility, while `.pred_1` reflects the probability that the cube has either facility. Our `outcome` variable is drawn from the dataset and allows us to see what proportion of sites actually have kilns or sugar facilities. Our `d_cell_id` variable is the ID for the cube and lets us map the sites for enumerators and for validation purposes, while `distname` tells us the district the site is located within. Our `pred_cluster` variable creates twenty 'bins' across which we will see the distribution of our propensity scores.
+
+```{r msstage_sampling, echo = F, warning = F, message = F}
+recombined_df <- rbind(test_df_pred, train_df_pred) %>%
+  mutate(pred_cluster = cut_interval(.pred_1,
+                                     n = 20,
+                                     right = F),
+         pred_chr = as.character(paste0(pred_cluster, sep = "")))
+
+# Sample our districts
+sampled_districts <- unique(recombined_df$distname) %>%
+  as_tidytable() %>%
+  slice_sample(prop = 0.3)
+
+# Overall sampling
+sampled_cluster <- recombined_df %>%
+  tidytable::filter(!is.na(pred_cluster)) %>%
+  group_by(distname) %>%
+  slice_sample(n = 10, weight_by = .pred_1) %>%
+  tidytable::filter(distname %in% sampled_districts$x)
+
+# tmp <- recombined_df %>%
+#   dplyr::filter(.pred_1 >= 0.0164) %>%
+#   arrange(.pred_1)
+
+# Mstage approach
+# m <- mstage(recombined_df,
+#             stage = list("cluster", "cluster"),
+#             varnames = list("distname", "pred_chr"),
+#             size = list(10, 0.01)) # something weird here
+# selected_obs <- recombined_df[m[[2]]$ID_unit,]
+
+
+# Using propensity scores to do exact matching -- DON'T!
+# outcome_one <- recombined_df %>%
+#   dplyr::filter(outcome == 1) %>%
+#   arrange(.pred_1)
+# outcome_two <- recombined_df %>%
+#   dplyr::filter(outcome == 0) %>%
+#   arrange(.pred_1)
+# matching <- outcome_two %>%
+#   tidytable::filter(.pred_1 %in% outcome_one$.pred_1) %>%
+#   rbind(., outcome_one) %>%
+#   group_by(distname, pred_chr) %>%
+#   slice_sample(n = 10, weight_by = outcome) %>%
+#   tidytable::filter(distname %in% sampled_districts$x)
+
+gc()
+```
+
+```{r random_sampling, echo = F, warning = F, message = F}
+# df_outcomes_sample <- recombined_df %>%
+#   slice_sample(n = 1000)
+```
+
+```{r writing_out_samples, echo = F, eval = F, warning = F, message = F}
+# write.csv(sampled_cluster, 
+#           "../Data/2024_06_30_clustered_sampling.csv", 
+#           row.names = F, na = "")
+# 
+# write.csv(df_outcomes_sample, 
+#           "../Data/2024_06_24_random_sampling.csv", 
+#           row.names = F, na = "")
+```
+
+```{r system_details, echo = F, warning = F, message = F}
+Sys.info()
+```
