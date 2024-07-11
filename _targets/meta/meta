@@ -1,5 +1,6 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
 admin_boundaries|stem|3a10f1af22f5b8d7|fc5b936981dd6b46|d4b9abfcae03df5e|684552227||t19914.8423725923s|8b857b30b923b343|4254|qs|local|vector|||0.042||
+base_recipe|stem|fc9d3aa4f504617c|31cc44919e126e0b|fd86ec04ab15d989|-1498512097||t19915.6599929517s|ad72483d3b32c029|73525722|qs|local|vector|||0.011||
 buildings|stem|314d86f04e4ceeb7|02e05d17df8834b7|916c84457ad28837|-1116330445||t19914.8425560425s|b5d894297e978693|14906273|qs|local|vector|||2.693||
 builtup|stem|8a3454d630c876ef|0f33268b060c7e74|f9fe89e45430d226|1931233050||t19914.8425903271s|4824ef41d4ed0157|19838447|qs|local|vector|||2.559||
 bus|stem|6c9fadfce67c124c|3dfcc8002c9e6ab5|7edd2ae8d0df7fea|415293472||t19914.8426230569s|cf6670d3f98b2860|10672803|qs|local|vector|||2.545||
@@ -9,12 +10,17 @@ crop_area|stem|7bc22ce14dc27b7f|469e263be770e052|64c2b66ea4db4940|-250664976||t1
 crop_locations|stem|d586eb4370421a28|2d79afc0c415297c|c02712c715742b95|-491706324||t19914.8424479072s|69ad9763a553bcd5|714|qs|local|vector|||6.428|There was 1 warning in mutate.ℹ In argument Production  as.numericpasteProduction t, sep  .Caused by warning NAs introduced by coercion|
 croplocations|stem|d586eb4370421a28|e6ca65f10cc23215|bf04ab5eb49a6878|-688551474||t19914.7466556948s|69ad9763a553bcd5|714|qs|local|vector|||0.456|There was 1 warning in mutate.ℹ In argument Production  as.numericpasteProduction t, sep  .Caused by warning NAs introduced by coercion|
 crops_district|stem|988ee1281c93a415|5f1a540f913c15b7|8113e609d6e3a9e8|-561863358||t19914.8424484245s|7554e92dc942d7d4|807|qs|local|vector|||0.039||
+ctrl_grid|stem|9feff56cb55644a1|5fd44c5ad0383e4b|2c530c1562a7fbd1|-1530565476||t19915.6683389897s|af94fcb8e6165bbe|176|qs|local|vector|||1.221||
 district_level|stem|0527cc29b2479a24|a5d133fef28c3d31|68d1a959ddf7ba37|-1511776135||t19914.8080185059s|6d0cbb09e784fbc8|7473|qs|local|vector|||0.005||
 districts|stem|a0a50571cf0cf7f6|784898090c14878d|68d1a959ddf7ba37|-2101477331||t19914.8429272252s|43d8316c175136cd|7467|qs|local|vector|||0.006||
+downsample_grid|stem|5ecac40c13c251c6|4516c0e29bfa905a|2c530c1562a7fbd1|-2047306683||t19915.6559639979s|4b9f32c43a4dd0c7|123|qs|local|vector|||1.287||
+downsample_recipe|stem|ed5ca7000923e21c|a3bdaa604eb728e1|991d7b8c2f94a518|-75153102||t19915.6623761663s|24e4b313961d9151|147067012|qs|local|vector|||0.032||
 education|stem|debe7d4b9691036d|9ee3850bd337a755|0e26bc8c335a07a0|459215347||t19914.8424712862s|4422f838b970686b|912|qs|local|vector|||1.97|There were 3 warnings in mutate.The first warning wasℹ In argument OVERALL_LI  as.numericpasteOVERALL_LI, sep  .Caused by warning NAs introduced by coercionℹ Run dplyrlast_dplyr_warnings to see the 2 remaining warnings.|
 forest|stem|be4087d6b2ae0a18|984014cd2733e7b3|49e6409d6a1e45d4|-199407735||t19914.842740113s|b9fbcc775ac01a03|27813809|qs|local|vector|||1.833||
 full_data|stem|048ec488cf95a8e1|31e948eebda8ea71|ae51f06a8f051144|499047378||t19914.843507604s|42d3c840c53b3bc3|83321566|qs|local|vector|||0.176||
 geospatial|stem|c0db4813ae0d44ad|bddccd7ab28c51e7|b7fb5d86d712f6a5|-245591191||t19914.842794243s|db2547c813c0344a|8709277|qs|local|vector|||4.015||
+glmnet_model|stem|a1ce05755f06d7da|afd0d4a6d2981825|9a260283df481742|-647260754||t19915.6630597163s|c0c9cbb904158116|147067237|qs|local|vector|||0.004||
+glmnet_tuning_results|stem|27f836674de6b0a9|344b5442f4f9e754|a59176b6a76db822|1245053201||t19915.8364670206s|d5036b8e1d31ea85|528442252|qs|local|vector|||14116.889||
 hydroveg|stem|bb6faf3a0faed2f6|e6b834a9b87196e8|a506f4eb60d4295a|306893680||t19914.8428223476s|6799f60553c2cd58|10890826|qs|local|vector|||2.104||
 industries|stem|a20d845612ae87a8|926e8cdf9a0c2864|a766540fb225bf9d|1794790564||t19914.8429270761s|bb6c9b28161a1211|143|qs|local|vector|||0.026||
 landcover|stem|f3f073888cd3878f|e8a53833db405dc4|4d829395855a0d86|186521626||t19914.8425205543s|92586f6f60506ed2|14006615|qs|local|vector|||3.918||
@@ -42,6 +48,8 @@ load_railroads|function|b539b1cbea00a1c4|||||||||||||||
 load_rangeland|function|61b16b5a9a728f0e|||||||||||||||
 load_roads|function|cb969d1c0b127973|||||||||||||||
 load_watercover|function|72e3558a7f4531bb|||||||||||||||
+null_model|stem|1b20b1dba1cd5dda|59f615469ff48eeb|fd86ec04ab15d989|-1855306326||t19915.6599518264s|dbfc2c41611e8d06|3368|qs|local|vector|||0.015||
+null_tuning_results|stem|fd8639fbe0c5ca5a|0964dbd2ada4f14a|77c63895c3516936|749975879||t19915.6623133932s|dd172745e4e3d38b|374114423|qs|local|vector|||36.947||
 outcomes|stem|109cbb92cc736dfd|98c0f0b9efa10cf4|424a2aef7a9ad92c|-1043494519||t19914.8434577975s|1b0b347982137782|83575624|qs|local|vector|||38.981||
 poverty|stem|4b0d389669cd1a03|2d87ae1e92a5f643|3aaeea470adc3c39|255717570||t19914.8424714897s|aa8a60c557b98faa|1135|qs|local|vector|||0.014||
 prepare_admin_boundaries|function|3e7a46dd519e793b|||||||||||||||
@@ -60,6 +68,7 @@ prepare_poverty|function|1c569bbbbd27daae|||||||||||||||
 prepare_railroads|function|da8a11d155ab315a|||||||||||||||
 prepare_roads|function|a9d901ab9d678b74|||||||||||||||
 prepare_watercover|function|a52238b5b4c5ae02|||||||||||||||
+prob_metrics|stem|6703f8586de8ef21|58e9737cadddcf61|2c530c1562a7fbd1|1412888098||t19915.6613433733s|d069e63c3cda666d|2627|qs|local|vector|||1.164||
 railroads|stem|f20b3df183ca89fd|83bc191885e12b22|7946aab8d3a0649c|-367811888||t19914.8428548563s|7e412fd7aef0e26c|10671712|qs|local|vector|||2.503||
 rangeland|stem|aab8c9827fd8569d|6f2e7f77d0c5c738|0a22b5ed0aaf8323|-1160059865||t19914.8428836155s|42756fae7e0cd81b|28352768|qs|local|vector|||2.002||
 raw_admin_boundaries|stem|86896f8ffb1c19de|af9a55d330c47376|2c530c1562a7fbd1|-6613676||t19914.7422653424s|fff600bf82c9080e|6812|qs|local|vector|||0.562||
@@ -73,4 +82,5 @@ roads|stem|ad51083f2d193f29|f65032e24c66b9ae|f4bee29544728da6|1262112461||t19914
 split|stem|9b6cdf1aef3e7d50|fc0ff4b8be7e48ba|dad8179961b80a90|-372059569||t19914.8473120948s|e7d9fd070b579f6d|84580762|qs|local|vector|||3.075||
 train_data|stem|5203d5f53eae2ac9|577a97f17f3238a7|f291824ca5e97ac9|-362607294||t19914.8473903477s|54ccb6ec77bd70ce|73537280|qs|local|vector|||2.642||
 train_folds|stem|99275bf4caf2094d|f0b58d70f0e9104a|fd86ec04ab15d989|-2017623732||t19914.8475271371s|7cb7ff06fd860671|371171531|qs|local|vector|||0.824||
+tune_control|stem|9feff56cb55644a1|4b232d29e2d8ca88|2c530c1562a7fbd1|-2070914353||t19915.6613434173s|af94fcb8e6165bbe|176|qs|local|vector|||0||
 watercover|stem|36a6e9e88515dfaa|53270231bd65713c|8285e5b694d84a3f|459010763||t19914.8423718893s|4b6c82e11797e5e4|11887932|qs|local|vector|||8.786||

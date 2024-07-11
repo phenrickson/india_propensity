@@ -11,6 +11,7 @@ library(targets)
 tar_option_set(
     packages = c("tidyverse",
                  "tidymodels",
+                 "themis",
                  "qs"), # Packages that your targets need for their tasks.
     format = "qs", # Optionally set the default storage format. qs is fast.
     memory = "transient",
@@ -59,12 +60,6 @@ list(
         command = 
             load_education() |>
             prepare_education()
-    ),
-    tar_target(
-        name = industries,
-        command = 
-            load_industries() |>
-            prepare_industries()
     ),
     tar_target(
         name = geospatial,
@@ -203,7 +198,129 @@ list(
             train_data |>
             vfold_cv(strata = outcome,
                      v = 5)
+    ),
+    tar_target(
+        tune_control,
+        command = 
+            control_resamples(verbose = T,
+                              save_pred = T,
+                              event_level = 'second')
+    ),
+    tar_target(
+        ctrl_grid,
+        command = 
+            control_grid(verbose = T,
+                         save_pred = T,
+                         event_level = 'second')
+    ),
+    tar_target(
+        prob_metrics,
+        command = metric_set(mn_log_loss,
+                             roc_auc)
+    ),
+    tar_target(
+        base_recipe,
+        command = 
+            recipe(outcome ~., data = train_data) |>
+            update_role(d_cell_id, 
+                        s_cell_id, 
+                        distname,
+                        district_lgd_code,
+                        new_role = "ID")
+    ),
+    tar_target(
+        downsample_recipe,
+        command = 
+            base_recipe |>
+            themis::step_downsample(outcome, under_ratio = tune::tune()) |>
+            step_impute_mean(
+                total_crimes,
+                sugarcane_production,
+                sugarcane_area,
+                sugarcane_yield,
+                production,
+                number_farms,
+                overall_li,
+                fem_male_lit
+            ) |>
+            step_zv(all_predictors()) |>
+            step_normalize(all_predictors())
+    ),
+    tar_target(
+        downsample_grid,
+        command = 
+            grid_regular(
+                under_ratio(
+                    range = c(1, 4), 
+                    trans = scales::transform_log10()
+                ),
+                levels = c(under_ratio = 4)
+            )
+    ),
+    tar_target(
+        null_model,
+        command = 
+            workflow() |> 
+            add_model(
+                logistic_reg()
+            ) |>
+            add_recipe(
+                recipe(
+                    outcome ~ 1,
+                    data = train_data
+                )
+            )
+    ),
+    tar_target(
+        null_tuning_results,
+        command = 
+            null_model |>
+            fit_resamples(resamples = train_folds,
+                          metrics = prob_metrics,
+                          control = tune_control)
+    ),
+    tar_target(
+        glmnet_model,
+        command = 
+            workflow() |>
+            add_model(
+                logistic_reg(engine = 'glmnet',
+                             penalty = 0.001,
+                             mixture = 0)
+            ) |>
+            add_recipe(
+                downsample_recipe
+            )
+    ),
+    tar_target(
+        glmnet_tuning_results,
+        command = 
+            glmnet_model |>
+            tune_grid(resamples = train_folds,
+                      grid = downsample_grid,
+                      metrics = prob_metrics,
+                      control = ctrl_grid)
+    ),
+    tar_target(
+        glmnet_best_tune,
+        command = 
+            glmnet_tuning_results |>
+            select_best(metric = 'roc_auc')
+    ),
+    tar_target(
+        glmnet_train_fit,
+        command = 
+            glmnet_model |>
+            finalize_model(parameters = glmnet_best_tune) |>
+            last_fit(
+                validation_set(split),
+                metrics = prob_metrics
+            )
     )
+    # tar_target(
+    #     null_training_results,
+    #     
+    # )
     # tar_target(
     #     base_recipe,
     #     command = 
