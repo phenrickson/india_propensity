@@ -193,6 +193,13 @@ list(
             training()
     ),
     tar_target(
+        validation_split,
+        command = 
+            split |>
+            validation_set() |>
+            pluck("splits", 1)
+    ),
+    tar_target(
         train_folds,
         command = 
             train_data |>
@@ -305,17 +312,37 @@ list(
         glmnet_best_tune,
         command = 
             glmnet_tuning_results |>
-            select_best(metric = 'roc_auc')
+            collect_metrics() |>
+            filter(under_ratio == 1000) |>
+            head(1)
+    ),
+    tar_target(
+        oos_preds,
+        command = 
+            glmnet_tuning_results |>
+            collect_predictions(parameters = glmnet_best_tune)
     ),
     tar_target(
         glmnet_train_fit,
         command = 
             glmnet_model |>
-            finalize_model(parameters = glmnet_best_tune) |>
+            finalize_workflow(parameters = glmnet_best_tune) |>
             last_fit(
-                validation_set(split),
+                split = validation_split,
                 metrics = prob_metrics
             )
+    ),
+    tar_target(
+        valid_metrics,
+        command = 
+            glmnet_train_fit |>
+            collect_metrics()
+    ),
+    tar_target(
+        valid_preds,
+        command = 
+            glmnet_train_fit |>
+            collect_predictions()
     )
     # tar_target(
     #     null_training_results,
