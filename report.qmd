@@ -1,0 +1,237 @@
+---
+title: "Analysis"
+format: 
+    html:
+        code-fold: true
+        code-overflow: scroll
+        code-summary: 'Show the code'
+        toc: true
+        fig-align: center
+        theme: cerulean
+        message: false
+editor: source
+---
+
+# Overview
+
+Pipeline used in generating output
+
+```{r}
+#| include: false
+#| echo: false
+options(knitr.duplicate.label = "allow")
+```
+
+```{r}
+#| include: false
+
+# packages
+library(targets)
+library(corrr)
+source("_targets_packages.R")
+
+# source code
+tar_source("R")
+
+# ggplot theme
+theme_set(theme_light())
+```
+
+```{r}
+#| fig-align: center
+#| fig-height: 4
+#| message: false
+#| warning: false
+targets::tar_visnetwork(targets_only =T)
+
+```
+
+```{r}
+#| include: FALSE
+
+# objects from pipeline
+tar_load(full_data)
+tar_load(train_data)
+tar_load(train_preds)
+tar_load(train_metrics)
+tar_load(glmnet_train_fit)
+tar_load(valid_metrics)
+tar_load(valid_preds)
+tar_load(valid_metrics)
+tar_load(propensity)
+```
+
+
+# Data
+
+Summary of full data
+
+```{r}
+
+full_data |>
+    select(outcome, where(is.numeric)) |>
+    gtsummary::tbl_summary()
+    
+```
+
+## Missigness
+
+Missingness by features in training set
+
+```{r}
+
+train_data |>
+    naniar::gg_miss_var(show_pct = T)
+
+```
+
+
+```{r}
+
+train_data |>
+    naniar::gg_miss_fct(fct = distname)+
+    coord_flip()+
+    geom_tile(color = 'white')
+
+```
+
+## Outcome
+
+```{r}
+
+train_data |>
+    group_by(outcome) |>
+    count() |>
+    spread(outcome, n) |>
+    mutate(prop = yes / (yes + no))
+
+```
+
+Distribution of outcome across predictors.
+
+```{r}
+#| warning: false
+#| message: false
+
+train_data |> 
+    sample_n(100000) |>
+    select(-s_cell_id,
+           -d_cell_id,
+           -distname,
+           -district_lgd_code) |>
+    select(outcome, where(is.numeric)) |>
+    plot_ridge_by_predictor(y = outcome)
+
+```
+
+
+
+## Predictors
+
+Correlation between predictors.
+
+```{r}
+
+corr = 
+    train_data |>
+    select(-s_cell_id,
+           -d_cell_id,
+           -distname,
+           -district_lgd_code) |>
+    select(where(is.numeric)) |>
+    corrr::correlate()
+
+corr |>
+    rearrange() |>
+    shave() |>
+    rplot() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+Network plot of correlation between predictors.
+
+```{r}
+
+corr |>
+    corrr::network_plot()
+
+```
+
+
+# Model
+
+Ridge regression with downsampling and mean imputation for missingness on numeric features.
+
+```{r}
+
+glmnet_train_fit |>
+    extract_workflow() |>
+    extract_recipe()
+
+```
+
+
+## Inference
+
+Coefficients from ridge regression trained on (downsampled) training set.
+
+```{r}
+#| message: false
+#| warning: false
+
+glmnet_train_fit |>
+    extract_workflow() |>
+    tidy() |>
+    coef_plot()
+
+```
+
+Path of coefficients over regularization with dotted line indicating selected penalty.
+
+```{r}
+#| message: false
+#| warning: false
+glmnet_train_fit |>
+    extract_workflow() |>
+    trace_plot()
+
+```
+
+## Metrics
+
+Results from resampling on training set.
+
+```{r}
+
+train_metrics
+
+```
+
+Results from predicting validation set.
+
+```{r}
+
+valid_metrics
+
+```
+
+# Scores
+
+Distribution of scores across propensity by type.
+
+```{r}
+
+quantiles = seq(0, 1, 0.1)
+
+propensity |>
+    group_by(type) |>
+    reframe(quantile = quantiles,
+            .pred_yes = quantile(.pred_yes, quantiles)) |>
+    arrange(quantile) |>
+    pivot_wider(names_from = c("type"),
+                values_from = c(".pred_yes")) |>
+    print(n = 25)
+
+```
+
