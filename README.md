@@ -4,8 +4,9 @@ modeling probability of forced labor for survey sampling in india.
 
 ## requirements
 
-this project uses the `targets` package to create a pipeline for reproducible results. running the pipeline will catch
-the `data` used in this project is stored externally and needs to be manually moved into the project folder.
+this project uses the `targets` package to create a pipeline for reproducible results. running the pipeline will produce the outputs of this project.
+
+before running pipeline, the `data` used in this project is stored externally and needs to be manually moved into the project folder.
 
 ## steps
 
