@@ -114,3 +114,37 @@ coef_plot = function(data) {
     theme_minimal()+
     ylab("feature")
 }
+
+plot_ridge_by_predictor = function(data,
+                                   y = outcome,
+                                   facet = T,
+                                   fill = T) {
+    
+    p = 
+        data |>
+        pivot_longer(cols = -c(outcome)) |>
+        ggplot(aes(x=value,
+                   y={{y}},
+                   fill = outcome))+
+        ggridges::geom_density_ridges(alpha = 0.5)+
+        scale_fill_manual(values = c('orange', 'dodgerblue'))+
+        theme_light()
+    
+    if (facet == T) {
+        
+        p = 
+            p +
+            facet_wrap(name~.,
+                       scales = "free")
+    } 
+    
+    if (fill == T) {
+        
+        p = 
+            p + 
+            guides(fill = 'none')
+    }
+    
+    p
+    
+}

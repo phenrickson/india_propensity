@@ -5,12 +5,13 @@
 
 # Load packages required to define the pipeline:
 library(targets)
-# library(tarchetypes) # Load other packages as needed.
+library(tarchetypes) # Load other packages as needed.
 
 # Set target options:
 tar_option_set(
     packages = c("tidyverse",
                  "tidymodels",
+                 "glmnet",
                  "themis",
                  "qs"), # Packages that your targets need for their tasks.
     format = "qs", # Optionally set the default storage format. qs is fast.
@@ -309,6 +310,12 @@ list(
                       control = ctrl_grid)
     ),
     tar_target(
+        train_metrics,
+        command = 
+            glmnet_tuning_results |>
+            collect_metrics(type = 'wide')
+    ),
+    tar_target(
         glmnet_best_tune,
         command = 
             glmnet_tuning_results |>
@@ -317,7 +324,7 @@ list(
             head(1)
     ),
     tar_target(
-        oos_preds,
+        train_preds,
         command = 
             glmnet_tuning_results |>
             collect_predictions(parameters = glmnet_best_tune)
@@ -343,14 +350,40 @@ list(
         command = 
             glmnet_train_fit |>
             collect_predictions()
+    ),
+    tar_target(
+        full_folds,
+        command = 
+            full_data |>
+            vfold_cv(strata = outcome,
+                     v = 5)
+    ),
+    tar_target(
+        oos_preds,
+        command = 
+            bind_rows(train_preds |>
+                          mutate(type = 'train_cv'),
+                      valid_preds |>
+                          mutate(type = 'valid')) |>
+            select(.pred_no, .pred_yes, id, .row, outcome, type) 
+    ),
+    tar_target(
+        propensity,
+        command = 
+            validation_split$data |>
+            mutate(.row = row_number()) |>
+            select(.row, outcome, s_cell_id, d_cell_id, distname, district_lgd_code) |>
+            left_join(oos_preds)
+    ),
+    tar_target(
+        propensity_scores,
+        command = 
+            propensity |>
+            write_csv(file = 'data/processed/propensity.csv')
+    ),
+    tar_quarto(
+        name = report,
+        path = "report.qmd",
+        quiet = F
     )
-    # tar_target(
-    #     null_training_results,
-    #     
-    # )
-    # tar_target(
-    #     base_recipe,
-    #     command = 
-    #         
-    # )
 )
